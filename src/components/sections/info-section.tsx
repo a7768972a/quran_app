@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   BookOpenCheck, ChevronRight, ChevronLeft, CalendarDays,
-  ClipboardList, Inbox, Users, Award, TrendingUp,
+  ClipboardList, Inbox, Users, Award, TrendingUp, CalendarOff,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,8 @@ export function InfoSection() {
   }, [load]);
 
   // تجميع السجلات حسب اليوم
+  // نظهر جميع أيام الأسبوع بالترتيب الزمني: السبت → الثلاثاء → السبت → الثلاثاء...
+  // الأيام التي ليست سبت/ثلاثاء نظهرها كذلك إذا اختارها المستخدم (لا يوجد درس في هذا التاريخ)
   const grouped = useMemo(() => {
     const map = new Map<string, RecordItem[]>();
     for (let i = 0; i <= 6; i++) {
@@ -57,13 +59,14 @@ export function InfoSection() {
       arr.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     return Array.from(map.entries())
-      .filter(([day, recs]) => {
+      .map(([day, recs]) => {
         const d = new Date(day);
-        // أظهر دائماً أيام الدرس (السبت والثلاثاء) + أي يوم آخر به سجلات
-        const dayName = d.getDay();
-        return dayName === 6 || dayName === 2 || recs.length > 0;
+        const dayOfWeek = d.getDay(); // 0=أحد, 6=سبت, 2=ثلاثاء
+        const isLessonDay = dayOfWeek === 6 || dayOfWeek === 2;
+        return { day, recs, date: d, dayOfWeek, isLessonDay };
       })
-      .map(([day, recs]) => ({ day, recs, date: new Date(day) }));
+      // نظهر: أيام الدرس دائماً + أي يوم به سجلات (لو سُجّل في غير يوم درس)
+      .filter((g) => g.isLessonDay || g.recs.length > 0);
   }, [records, weekStart]);
 
   // إحصائيات الأسبوع
@@ -88,7 +91,7 @@ export function InfoSection() {
           سجل التسميع
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          استعرض سجلات الحفظ أسبوعياً — تظهر أيام الدرس (السبت والثلاثاء) وأي يوم به سجلات
+          استعرض سجلات الحفظ أسبوعياً — تظهر أيام السبت والثلاثاء بالتناوب، والأيام الأخرى تُظهر «لا يوجد درس في هذا التاريخ»
         </p>
       </div>
 
@@ -173,13 +176,19 @@ export function InfoSection() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {grouped.map(({ day, recs, date }) => (
-            <Card key={day} className="border-border/60 shadow-sm overflow-hidden">
+          {grouped.map(({ day, recs, date, isLessonDay }) => (
+            <Card key={day} className={`border-border/60 shadow-sm overflow-hidden ${!isLessonDay ? "opacity-75" : ""}`}>
               <CardHeader className="py-3 px-4 bg-muted/40 border-b border-border/50">
                 <div className="flex items-center justify-between gap-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <CalendarDays className="size-4 text-primary" />
                     {formatDateAr(date)}
+                    {!isLessonDay && (
+                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground border-muted-foreground/30">
+                        <CalendarOff className="size-3 ml-1" />
+                        يوم غير درس
+                      </Badge>
+                    )}
                   </CardTitle>
                   <Badge variant="secondary" className="text-[11px]">
                     {recs.length} سجل
@@ -189,7 +198,7 @@ export function InfoSection() {
               <CardContent className="p-0">
                 {recs.length === 0 ? (
                   <div className="py-6 text-center text-sm text-muted-foreground">
-                    لا توجد سجلات في هذا اليوم
+                    {isLessonDay ? "لا توجد سجلات في هذا اليوم" : "لا يوجد درس في هذا التاريخ"}
                   </div>
                 ) : (
                   <ul className="divide-y divide-border/40">

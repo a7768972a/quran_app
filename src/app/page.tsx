@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BookOpenCheck, Users, ClipboardList, BarChart3, GraduationCap } from "lucide-react";
+import { BookOpenCheck, Users, ClipboardList, BarChart3, GraduationCap, Github, Heart } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DashboardSection } from "@/components/sections/dashboard-section";
 import { StudentsSection } from "@/components/sections/students-section";
@@ -24,7 +24,7 @@ export default function Home() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-extrabold leading-tight">
-                نظام تسجيل حضور الطلاب
+                نظام حلقة جامع الخضر
               </h1>
               <p className="text-xs text-muted-foreground">
                 تسجيل الحفظ والوظائف ومتابعة الطلاب
@@ -73,8 +73,24 @@ export default function Home() {
 
       {/* التذييل الثابت */}
       <footer className="mt-auto border-t border-border/60 bg-card/50 backdrop-blur-sm">
-        <div className="mx-auto max-w-6xl px-4 py-4 text-center text-xs text-muted-foreground">
-          نظام تسجيل الحضور والحفظ — أيام الدرس: السبت والثلاثاء
+        <div className="mx-auto max-w-6xl px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <span>أيام الدرس: السبت والثلاثاء</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span>صُمّم بـ</span>
+            <Heart className="size-3 text-primary" fill="currentColor" />
+            <span>بواسطة</span>
+            <a
+              href="https://github.com/a7768972a"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-bold text-foreground hover:text-primary transition-colors"
+            >
+              عبدالكريم طه
+              <Github className="size-3" />
+            </a>
+          </div>
         </div>
       </footer>
     </div>

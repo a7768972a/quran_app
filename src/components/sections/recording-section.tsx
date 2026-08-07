@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   ClipboardList, Search, CheckCircle2, Calendar, User,
-  BookOpen, Award, NotebookPen, Send, X, Clock,
+  BookOpen, Award, NotebookPen, Send, X, Clock, UserPlus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { StudentFormDialog } from "@/components/student-form-dialog";
 import { GRADES, getGradeColor, getLessonDayLabel } from "@/lib/constants";
 import { toDateInputValue, formatDateAr } from "@/lib/date";
 import type { Student, Grade } from "@/types";
@@ -29,6 +30,7 @@ export function RecordingSection() {
   const [date, setDate] = useState(toDateInputValue(new Date()));
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<{ name: string; grade: Grade } | null>(null);
+  const [addStudentOpen, setAddStudentOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -156,8 +158,26 @@ export function RecordingSection() {
                         ))}
                       </div>
                     ) : filtered.length === 0 ? (
-                      <div className="p-6 text-center text-sm text-muted-foreground">
-                        {students.length === 0 ? "لا يوجد طلاب بعد" : "لا توجد نتائج"}
+                      <div className="p-5 text-center">
+                        {students.length === 0 ? (
+                          <>
+                            <p className="text-sm text-muted-foreground mb-3">لا يوجد طلاب بعد</p>
+                            <Button size="sm" onClick={() => setAddStudentOpen(true)}>
+                              <UserPlus className="size-4" />
+                              إضافة طالب جديد
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              لم نجد طالباً باسم «{query}»
+                            </p>
+                            <Button size="sm" variant="outline" onClick={() => setAddStudentOpen(true)}>
+                              <UserPlus className="size-4" />
+                              إضافة «{query}» كطالب جديد
+                            </Button>
+                          </>
+                        )}
                       </div>
                     ) : (
                       <ul className="divide-y divide-border/40">
@@ -315,6 +335,18 @@ export function RecordingSection() {
           </CardContent>
         </Card>
       </div>
+
+      {/* نموذج إضافة طالب سريع */}
+      <StudentFormDialog
+        open={addStudentOpen}
+        onOpenChange={setAddStudentOpen}
+        onSaved={(s) => {
+          // حدّث القائمة واختر الطالب الجديد فوراً
+          load();
+          setSelected(s);
+          setQuery("");
+        }}
+      />
     </div>
   );
 }

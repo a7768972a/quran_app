@@ -33,8 +33,8 @@ const hayyakum = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "نظام تسجيل حضور الطلاب",
-  description: "نظام لتسهيل تسجيل حضور الطلاب وحفظهم",
+  title: "نظام حلقة جامع الخضر",
+  description: "نظام لتسهيل تسجيل حضور الطلاب وحفظهم في حلقة جامع الخضر",
 };
 
 export default function RootLayout({
