@@ -1,0 +1,44 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// أيام الدرس: سبت (saturday) / ثلاثاء (tuesday)
+// تُخزَّن كنص لأن SQLite لا يدعم enum
+model Student {
+  id        String   @id @default(cuid())
+  name      String
+  age       Int
+  // يوم الدرس: "saturday" أو "tuesday"
+  lessonDay String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  records Record[]
+}
+
+model Record {
+  id           String   @id @default(cuid())
+  studentId    String
+  // الحفظ: يكتبه المعلم
+  memorization String
+  // الدرجة: مقبول / جيد / جيد جدا / ممتاز
+  grade        String
+  // الوظيفة: يكتبها المعلم
+  homework     String
+  // تاريخ التسميع
+  date         DateTime
+  createdAt    DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([date])
+  @@index([studentId])
+}
