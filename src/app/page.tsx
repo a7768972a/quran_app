@@ -14,7 +14,7 @@ export default function Home() {
   const [tab, setTab] = useState<TabKey>("dashboard");
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-emerald-50/40 via-background to-background">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-[#edebe0] via-background to-background">
       {/* الرأس */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between gap-3">

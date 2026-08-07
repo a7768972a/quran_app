@@ -6,10 +6,11 @@ export const LESSON_DAYS = [
 ] as const;
 
 export const GRADES = [
-  { value: "مقبول", label: "مقبول", color: "bg-amber-100 text-amber-800 border-amber-200" },
-  { value: "جيد", label: "جيد", color: "bg-sky-100 text-sky-800 border-sky-200" },
-  { value: "جيد جدا", label: "جيد جدا", color: "bg-teal-100 text-teal-800 border-teal-200" },
-  { value: "ممتاز", label: "ممتاز", color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+  // الدرجات بألوان اللوحة الجديدة (Forest + Golden Wheat)
+  { value: "مقبول", label: "مقبول", color: "bg-stone-200/70 text-stone-700 border-stone-300" },
+  { value: "جيد", label: "جيد", color: "bg-[#b9a779]/25 text-[#6b5d3a] border-[#b9a779]/40" },
+  { value: "جيد جدا", label: "جيد جدا", color: "bg-[#428177]/20 text-[#2d5a52] border-[#428177]/40" },
+  { value: "ممتاز", label: "ممتاز", color: "bg-[#054239]/15 text-[#054239] border-[#054239]/30" },
 ] as const;
 
 export const GRADE_VALUES: Record<string, number> = {

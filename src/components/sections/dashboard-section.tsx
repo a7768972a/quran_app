@@ -19,7 +19,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 
-const PIE_COLORS = ["#f59e0b", "#0ea5e9", "#14b8a6", "#10b981"];
+const PIE_COLORS = ["#988561", "#b9a779", "#428177", "#054239"];
 
 type TabKey = "dashboard" | "students" | "recording" | "info";
 
@@ -82,25 +82,25 @@ export function DashboardSection({ onNavigate }: Props) {
           icon={<Users className="size-5" />}
           label="إجمالي الطلاب"
           value={stats.totalStudents}
-          tint="emerald"
+          tint="forest"
         />
         <StatCard
           icon={<ClipboardList className="size-5" />}
           label="إجمالي السجلات"
           value={stats.totalRecords}
-          tint="teal"
+          tint="sage"
         />
         <StatCard
           icon={<CalendarCheck className="size-5" />}
           label="سجلات اليوم"
           value={stats.todayRecords}
-          tint="amber"
+          tint="wheat"
         />
         <StatCard
           icon={<Award className="size-5" />}
           label="درجات ممتازة"
           value={stats.gradeDistribution.find((g) => g.grade === "ممتاز")?.count ?? 0}
-          tint="green"
+          tint="olive"
         />
       </div>
 
@@ -155,7 +155,7 @@ export function DashboardSection({ onNavigate }: Props) {
                       contentStyle={{ borderRadius: 12, border: "1px solid oklch(0.9 0.015 145)", fontSize: 13, fontFamily: "inherit" }}
                       cursor={{ fill: "oklch(0.95 0.03 150)" }}
                     />
-                    <Bar dataKey="count" name="عدد السجلات" fill="oklch(0.52 0.13 152)" radius={[6, 6, 0, 0]} maxBarSize={42} />
+                    <Bar dataKey="count" name="عدد السجلات" fill="#054239" radius={[6, 6, 0, 0]} maxBarSize={42} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -197,8 +197,8 @@ export function DashboardSection({ onNavigate }: Props) {
             <CardTitle className="text-base">الطلاب حسب يوم الدرس</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 pt-2">
-            <DayRow label="السبت" count={stats.saturdayStudents} total={stats.totalStudents} color="bg-emerald-500" />
-            <DayRow label="الثلاثاء" count={stats.tuesdayStudents} total={stats.totalStudents} color="bg-teal-500" />
+            <DayRow label="السبت" count={stats.saturdayStudents} total={stats.totalStudents} color="bg-[#054239]" />
+            <DayRow label="الثلاثاء" count={stats.tuesdayStudents} total={stats.totalStudents} color="bg-[#428177]" />
           </CardContent>
         </Card>
 
@@ -255,13 +255,14 @@ function StatCard({
   icon: React.ReactNode;
   label: string;
   value: number;
-  tint: "emerald" | "teal" | "amber" | "green";
+  tint: "forest" | "sage" | "wheat" | "olive";
 }) {
+  // ألوان اللوحة الجديدة
   const tints: Record<string, string> = {
-    emerald: "bg-emerald-500/10 text-emerald-700",
-    teal: "bg-teal-500/10 text-teal-700",
-    amber: "bg-amber-500/10 text-amber-700",
-    green: "bg-green-500/10 text-green-700",
+    forest: "bg-[#054239]/12 text-[#054239]",
+    sage: "bg-[#428177]/15 text-[#2d5a52]",
+    wheat: "bg-[#b9a779]/25 text-[#6b5d3a]",
+    olive: "bg-[#988561]/20 text-[#6b5d3a]",
   };
   return (
     <Card className="border-border/60 shadow-sm overflow-hidden relative">
