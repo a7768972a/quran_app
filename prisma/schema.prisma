@@ -6,12 +6,12 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 // أيام الدرس: سبت (saturday) / ثلاثاء (tuesday)
-// تُخزَّن كنص لأن SQLite لا يدعم enum
+// تُخزَّن كنص (ممكن استخدام enum في PostgreSQL لكن نُبقيه نص للبساطة)
 model Student {
   id        String   @id @default(cuid())
   name      String
