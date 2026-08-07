@@ -1,0 +1,48 @@
+import type { Metadata } from "next";
+import localFont from "next/font/local";
+import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+
+// ✅ تسجيل خط محلي من ملفات TTF
+// ضع ملفاتك في: src/fonts/
+// ثم عدّل المسارات أدناه لتطابق أسماء ملفاتك
+const myFont = localFont({
+  src: [
+    {
+      path: "../../fonts/YourFont-Regular.ttf", // ← غيّر الاسم
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../fonts/YourFont-Bold.ttf", // ← غيّر الاسم
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  variable: "--font-tajawal", // اسم المتغير المستخدم في CSS
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "نظام تسجيل حضور الطلاب",
+  description: "نظام لتسهيل تسجيل حضور الطلاب وحفظهم",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <body
+        className={`${myFont.variable} font-sans antialiased bg-background text-foreground`}
+      >
+        {children}
+        <Toaster />
+        <SonnerToaster position="top-center" richColors />
+      </body>
+    </html>
+  );
+}
