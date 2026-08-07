@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Users, Search, UserPlus, Pencil, Trash2, BookOpen,
-  Calendar, ClipboardList, ChevronLeft, X,
+  Calendar, ClipboardList, ChevronLeft, X, Award, TrendingUp,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,11 +18,12 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { getLessonDayLabel, getGradeColor } from "@/lib/constants";
+import { getLessonDayLabel, getGradeColor, GRADE_VALUES, GRADES } from "@/lib/constants";
 import { formatDateAr } from "@/lib/date";
-import type { Student, StudentWithRecords } from "@/types";
+import type { Student, StudentWithRecords, RecordItem, Grade } from "@/types";
 import { toast } from "sonner";
 import { StudentFormDialog } from "@/components/student-form-dialog";
+import { RecordEditDialog } from "@/components/record-edit-dialog";
 
 export function StudentsSection() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -170,6 +171,14 @@ export function StudentsSection() {
       <StudentProfileDialog
         student={profile}
         onOpenChange={(o) => { if (!o) setProfile(null); }}
+        onReload={async (id) => {
+          // إعادة تحميل بيانات الطالب من الـ API
+          try {
+            const res = await fetch(`/api/students/${id}`, { cache: "no-store" });
+            if (res.ok) setProfile((await res.json()) as StudentWithRecords);
+          } catch {}
+          load(); // حدّث القائمة أيضاً
+        }}
       />
     </div>
   );
@@ -226,12 +235,59 @@ function StudentCard({
 }
 
 function StudentProfileDialog({
-  student, onOpenChange,
+  student, onOpenChange, onReload,
 }: {
   student: StudentWithRecords | null;
   onOpenChange: (o: boolean) => void;
+  onReload: (id: string) => void;
 }) {
+  const [editingRecord, setEditingRecord] = useState<RecordItem | null>(null);
+  const [deletingRecord, setDeletingRecord] = useState<RecordItem | null>(null);
+
+  // إحصائيات الطالب
+  const stats = useMemo(() => {
+    if (!student || student.records.length === 0) return null;
+    const values = student.records.map((r) => GRADE_VALUES[r.grade] ?? 0);
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    const avgGrade =
+      avg >= 3.5 ? "ممتاز" : avg >= 2.5 ? "جيد جدا" : avg >= 1.5 ? "جيد" : "مقبول";
+    // آخر 4 درجات (الأقدم للأحدث)
+    const recent = [...student.records]
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(-4)
+      .map((r) => r.grade);
+    // اتجاه الأداء
+    let trend: "up" | "down" | "stable" = "stable";
+    if (recent.length >= 2) {
+      const last = GRADE_VALUES[recent[recent.length - 1]] ?? 0;
+      const prev = GRADE_VALUES[recent[recent.length - 2]] ?? 0;
+      if (last > prev) trend = "up";
+      else if (last < prev) trend = "down";
+    }
+    // توزيع الدرجات
+    const gradeCounts: Record<string, number> = {};
+    for (const r of student.records) {
+      gradeCounts[r.grade] = (gradeCounts[r.grade] ?? 0) + 1;
+    }
+    const excellent = gradeCounts["ممتاز"] ?? 0;
+    return { avgGrade, recent, trend, excellent, total: student.records.length };
+  }, [student]);
+
+  const handleDeleteRecord = async () => {
+    if (!deletingRecord || !student) return;
+    try {
+      const res = await fetch(`/api/records/${deletingRecord.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      toast.success("تم حذف السجل");
+      setDeletingRecord(null);
+      onReload(student.id);
+    } catch {
+      toast.error("تعذر حذف السجل");
+    }
+  };
+
   return (
+    <>
     <Dialog open={!!student} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
@@ -253,6 +309,42 @@ function StudentProfileDialog({
               <InfoCell label="عدد السجلات" value={String(student.records.length)} />
             </div>
 
+            {/* إحصائيات الأداء */}
+            {stats && (
+              <div className="grid grid-cols-3 gap-2">
+                <StatCell
+                  icon={<Award className="size-3.5" />}
+                  label="متوسط الدرجة"
+                  value={stats.avgGrade}
+                />
+                <StatCell
+                  icon={<TrendingUp className="size-3.5" />}
+                  label="اتجاه الأداء"
+                  value={stats.trend === "up" ? "تحسّن" : stats.trend === "down" ? "تراجع" : "ثابت"}
+                  valueClass={stats.trend === "up" ? "text-emerald-700" : stats.trend === "down" ? "text-red-700" : ""}
+                />
+                <StatCell
+                  icon={<Award className="size-3.5" />}
+                  label="درجات ممتازة"
+                  value={`${stats.excellent}/${stats.total}`}
+                />
+              </div>
+            )}
+
+            {/* آخر الدرجات (اتجاه بصري) */}
+            {stats && stats.recent.length > 0 && (
+              <div className="rounded-xl border border-border/50 bg-muted/20 p-3">
+                <p className="text-[11px] text-muted-foreground mb-2">آخر الدرجات</p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {stats.recent.map((g, i) => (
+                    <Badge key={i} variant="outline" className={`text-[10px] border ${getGradeColor(g as Grade)}`}>
+                      {g}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* سجل الحفظ */}
             <div>
               <h4 className="text-sm font-bold mb-2 flex items-center gap-2">
@@ -272,9 +364,29 @@ function StudentProfileDialog({
                           <Calendar className="size-3" />
                           {formatDateAr(r.date)}
                         </span>
-                        <Badge variant="outline" className={`text-[10px] border ${getGradeColor(r.grade)}`}>
-                          {r.grade}
-                        </Badge>
+                        <div className="flex items-center gap-1">
+                          <Badge variant="outline" className={`text-[10px] border ${getGradeColor(r.grade)}`}>
+                            {r.grade}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-6 text-muted-foreground hover:text-primary"
+                            onClick={() => setEditingRecord(r)}
+                            title="تعديل"
+                          >
+                            <Pencil className="size-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-6 text-muted-foreground hover:text-destructive"
+                            onClick={() => setDeletingRecord(r)}
+                            title="حذف"
+                          >
+                            <Trash2 className="size-3" />
+                          </Button>
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <div className="text-sm">
@@ -295,6 +407,36 @@ function StudentProfileDialog({
         )}
       </DialogContent>
     </Dialog>
+
+    {/* تعديل السجل */}
+    <RecordEditDialog
+      record={editingRecord}
+      open={!!editingRecord}
+      onOpenChange={(o) => { if (!o) setEditingRecord(null); }}
+      onSaved={() => { if (student) onReload(student.id); }}
+    />
+
+    {/* تأكيد حذف السجل */}
+    <AlertDialog open={!!deletingRecord} onOpenChange={(o) => { if (!o) setDeletingRecord(null); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>حذف السجل</AlertDialogTitle>
+          <AlertDialogDescription>
+            هل أنت متأكد من حذف هذا السجل؟ لا يمكن التراجع.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>إلغاء</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-white hover:bg-destructive/90"
+            onClick={handleDeleteRecord}
+          >
+            نعم، احذف
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
 
@@ -303,6 +445,27 @@ function InfoCell({ label, value }: { label: string; value: string }) {
     <div className="rounded-xl border border-border/50 bg-muted/30 p-3 text-center">
       <p className="text-[11px] text-muted-foreground">{label}</p>
       <p className="text-sm font-bold mt-0.5">{value}</p>
+    </div>
+  );
+}
+
+function StatCell({
+  icon, label, value, valueClass,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  valueClass?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border/50 bg-card p-3 flex items-center gap-2">
+      <div className="grid place-items-center size-7 rounded-lg bg-primary/10 text-primary shrink-0">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] text-muted-foreground truncate">{label}</p>
+        <p className={`text-xs font-bold truncate ${valueClass ?? ""}`}>{value}</p>
+      </div>
     </div>
   );
 }

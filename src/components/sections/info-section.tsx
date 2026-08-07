@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   BookOpenCheck, ChevronRight, ChevronLeft, CalendarDays,
   ClipboardList, Inbox, Users, Award, TrendingUp, CalendarOff,
+  Printer, UserX,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,12 +13,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GRADES, getGradeColor, getLessonDayLabel } from "@/lib/constants";
 import { getWeekStart, addDays, formatDateAr, formatDateShortAr, toDateInputValue } from "@/lib/date";
-import type { RecordItem, Grade } from "@/types";
+import type { RecordItem, Student, Grade } from "@/types";
 import { toast } from "sonner";
 
 export function InfoSection() {
   const [weekAnchor, setWeekAnchor] = useState<Date>(getWeekStart(new Date()));
   const [records, setRecords] = useState<RecordItem[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
 
   const weekStart = useMemo(() => getWeekStart(weekAnchor), [weekAnchor]);
@@ -26,10 +28,15 @@ export function InfoSection() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/records?weekStart=${toDateInputValue(weekStart)}`, { cache: "no-store" });
-      if (!res.ok) throw new Error();
-      const data = (await res.json()) as RecordItem[];
-      setRecords(data);
+      const [recRes, stuRes] = await Promise.all([
+        fetch(`/api/records?weekStart=${toDateInputValue(weekStart)}`, { cache: "no-store" }),
+        fetch(`/api/students`, { cache: "no-store" }),
+      ]);
+      if (!recRes.ok || !stuRes.ok) throw new Error();
+      const recData = (await recRes.json()) as RecordItem[];
+      const stuData = (await stuRes.json()) as Student[];
+      setRecords(recData);
+      setStudents(stuData);
     } catch {
       toast.error("تعذر جلب السجلات");
     } finally {
@@ -85,7 +92,13 @@ export function InfoSection() {
 
   return (
     <div className="space-y-5">
-      <div>
+      {/* عنوان يظهر فقط عند الطباعة */}
+      <div className="hidden print:block text-center mb-4 pb-3 border-b-2 border-primary">
+        <h1 className="text-2xl font-extrabold">نظام حلقة جامع الخضر</h1>
+        <p className="text-sm mt-1">سجل التسميع للأسبوع: {formatDateAr(weekStart)} — {formatDateAr(weekEnd)}</p>
+      </div>
+
+      <div className="no-print">
         <h2 className="text-xl font-extrabold flex items-center gap-2">
           <BookOpenCheck className="size-5 text-primary" />
           سجل التسميع
@@ -133,8 +146,24 @@ export function InfoSection() {
               >
                 هذا الأسبوع
               </Button>
-              <Button variant="outline" size="icon" onClick={() => setWeekAnchor(addDays(weekStart, 7))} title="الأسبوع التالي">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setWeekAnchor(addDays(weekStart, 7))}
+                title="الأسبوع التالي"
+              >
                 <ChevronLeft className="size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.print()}
+                className="text-xs gap-1.5"
+                title="طباعة سجلات الأسبوع"
+                disabled={records.length === 0}
+              >
+                <Printer className="size-4" />
+                <span className="hidden sm:inline">طباعة</span>
               </Button>
             </div>
           </div>
@@ -176,8 +205,16 @@ export function InfoSection() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {grouped.map(({ day, recs, date, isLessonDay }) => (
-            <Card key={day} className={`border-border/60 shadow-sm overflow-hidden ${!isLessonDay ? "opacity-75" : ""}`}>
+          {grouped.map(({ day, recs, date, isLessonDay }) => {
+            // حساب الطلاب الغائبين (طلاب يوم الدرس بدون سجل في هذا اليوم)
+            const dayLessonValue = date.getDay() === 6 ? "saturday" : date.getDay() === 2 ? "tuesday" : null;
+            const presentStudentIds = new Set(recs.map((r) => r.studentId));
+            const absentStudents = isLessonDay && dayLessonValue
+              ? students.filter((s) => s.lessonDay === dayLessonValue && !presentStudentIds.has(s.id))
+              : [];
+
+            return (
+            <Card key={day} className={`border-border/60 shadow-sm overflow-hidden print-card ${!isLessonDay ? "opacity-75 print:opacity-100" : ""}`}>
               <CardHeader className="py-3 px-4 bg-muted/40 border-b border-border/50">
                 <div className="flex items-center justify-between gap-2">
                   <CardTitle className="text-sm flex items-center gap-2">
@@ -190,9 +227,17 @@ export function InfoSection() {
                       </Badge>
                     )}
                   </CardTitle>
-                  <Badge variant="secondary" className="text-[11px]">
-                    {recs.length} سجل
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    {absentStudents.length > 0 && (
+                      <Badge variant="outline" className="text-[10px] font-normal text-amber-700 border-amber-300 bg-amber-50">
+                        <UserX className="size-3 ml-1" />
+                        {absentStudents.length} غائب
+                      </Badge>
+                    )}
+                    <Badge variant="secondary" className="text-[11px]">
+                      {recs.length} سجل
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
@@ -232,9 +277,33 @@ export function InfoSection() {
                     ))}
                   </ul>
                 )}
+
+                {/* الطلاب الغائبون */}
+                {absentStudents.length > 0 && (
+                  <div className="border-t border-dashed border-amber-200 bg-amber-50/40 p-3">
+                    <p className="text-[11px] font-bold text-amber-800 mb-2 flex items-center gap-1.5">
+                      <UserX className="size-3.5" />
+                      الطلاب الغائبون ({absentStudents.length})
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {absentStudents.map((s) => (
+                        <span
+                          key={s.id}
+                          className="inline-flex items-center gap-1 rounded-lg bg-white border border-amber-200 px-2 py-1 text-[11px] text-amber-900"
+                        >
+                          <span className="grid place-items-center size-4 rounded bg-amber-100 text-[9px] font-bold">
+                            {s.name.charAt(0)}
+                          </span>
+                          {s.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

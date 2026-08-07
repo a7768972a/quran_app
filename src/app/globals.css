@@ -171,3 +171,44 @@
 .nums {
   font-feature-settings: "tnum";
 }
+
+/* ===== تنسيقات الطباعة ===== */
+@media print {
+  /* إخفاء العناصر غير المرغوبة عند الطباعة */
+  header,
+  footer,
+  [role="tablist"],
+  .no-print {
+    display: none !important;
+  }
+
+  /* إعادة ضبط الخلفيات والألوان للطباعة */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* إظهار المحتوى كاملاً */
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* تجنب قطع البطاقات بين الصفحات */
+  .print-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+
+  /* تكبير الخط قليلاً للطباعة */
+  .print-content {
+    font-size: 12pt;
+  }
+
+  /* إظهار روابط GitHub كاملة */
+  a[href]:after {
+    content: "";
+  }
+}
